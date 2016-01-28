@@ -1,0 +1,113 @@
+<div id="head" ng-show="ready">
+
+	<table class="table-condensed">
+
+		<tr>
+
+			<td>Log</td>
+
+			<td>
+
+				<select class="form-control" ng-change="reset()" ng-model="log" ng-options="log for log in logs"></select>
+
+			</td>
+
+			<td>Records</td>
+
+			<td>
+
+				<select class="form-control" ng-model="page" ng-options="page.val as page.text for page in pages"></select>
+	
+			</td>
+
+			<td>Order</td>
+
+			<td>
+
+				<select class="form-control" ng-model="order" ng-options="opt.val as opt.text for opt in options.order"></select>
+
+			</td>
+
+			<td>
+
+				<button type="button" class="btn btn-info" ng-click="showLogs()">Show</button>
+
+			</td>
+
+		</tr>
+
+	</table>
+
+</div>
+
+<div id="main" class="table-condensed" ng-show="ready">
+
+	<table id="logs" class="table table-hover table-striped">
+
+		<tr>
+
+			<th class="logTH logText">
+
+				<a title="click to sort by&#13;this column" ng-click="sortBy('text')">text</a>
+
+			</th>
+
+			<th class="logTH logTimestamp">
+
+				<a title="click to sort by&#13;this column" ng-click="sortBy('timestamp')">timestamp</a>
+
+			</th>
+
+			<th>
+
+				<div>
+
+					<button type="button" class="btn btn-danger" ng-click="delete()">Delete</button>
+
+					<button type="button" class="btn btn-warning" ng-click="export()">Export</button>
+
+				</div>
+			
+			</th>
+
+		</tr>
+
+		<tr class="logFilter">
+
+			<td>
+
+				<input class="form-control "type="text" placeholder="filter" ng-model="text"/>
+
+			</td>
+
+			<td>
+					
+				<input class="form-control "type="text" placeholder="filter" ng-model="timestamp"/>
+
+			</td>
+
+			<td class="logDelete">
+		
+				<input type="checkbox" ng-change="toggleAll()" ng-model="selectAll"/>
+
+			</td>
+	
+		</tr>
+
+		<tr ng-repeat="obj in (filteredList = (data | orderBy:user.logs.sort| filter: {log: user.logs.list} | filter: {text: text} | filter: {timestamp: timestamp}))">
+		
+			<td ng-bind="obj.text"></td>
+
+			<td ng-bind="obj.timestamp"></td>
+
+			<td class="logDelete">
+		
+				<input type="checkbox" ng-model="marked[obj.id]"/>
+
+			</td>
+
+		</tr>
+
+	</table>
+	
+</div>

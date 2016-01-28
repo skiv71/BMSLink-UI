@@ -1,0 +1,91 @@
+#head, #thead {
+    margin: 20px;
+}
+
+#main {
+    margin: 20px;
+    width: 98vw;
+    height: 88vh;
+    overflow: auto;
+}
+
+.table-hover tbody tr:hover td {
+    background: #e4f5fc;
+}
+
+.table > tbody > tr > th {
+    text-transform: capitalize;
+    padding-left: 10px;
+}
+
+.table > tbody > tr > td {
+    vertical-align: middle;
+}
+
+#head h4 {
+    float: left;
+    text-transform: capitalize;
+}
+
+#menu td {
+    padding-left: 15px;
+}
+
+#head td {
+    padding-left: 10px;
+}
+
+.table a {
+    text-decoration: none;
+    cursor: pointer;
+    color: inherit;
+}
+
+#menu a {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+#menu a:hover {
+    background: #e4f5fc;
+    color: black;
+}
+
+.dimmer {
+    display: inline;
+    float: left;
+}
+
+#main button {
+    margin-left: 8px;
+}
+
+.navbar-search.pull-right {
+    margin-top: 10px;
+    margin-bottom: 0px;
+
+}
+
+.active {
+    border-bottom:2px solid #ad1f2d !important;
+}
+
+.logTH {
+    vertical-align: middle !important;
+}
+
+.logTH td:nth-child(2) {
+    padding-left: 10px;
+}
+
+.logText {
+    width: 72vw;
+}
+
+.logDelete {
+    text-align: center;
+}
+
+#records {
+    font-weight: normal;
+}

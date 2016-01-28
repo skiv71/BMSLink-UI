@@ -1,0 +1,67 @@
+<div id="head" ng-show="ready">
+
+</div>
+
+<div id="main" class="table-responsive" ng-show="ready">
+
+	<table class="table table-hover table-striped">
+
+		<tr>
+
+			<th ng-repeat="col in columns">
+
+				<a title="click to sort by&#13;this column" ng-click="sortBy(col)" ng-bind="col"></a>
+
+			</th>
+
+			<th></th>
+
+		</tr>
+
+		<tr ng-repeat="obj in data | orderBy:user.devices.sort track by $index">
+
+			<td ng-bind="obj.serial"></td>
+
+			<td ng-bind="obj.device"></td>
+
+			<td ng-bind="obj.type"></td>
+
+			<td>
+
+				<button type="button" class="btn btn-danger" ng-click="set(obj,'stop')">Stop</button>
+
+				<button type="button" class="btn btn-success" ng-click="set(obj,'start')">Start</button>
+
+			</td>
+
+			<td>
+
+				<select class="form-control" ng-model="obj.autostart" ng-change="autoEdit()" ng-options="opt.val as opt.text for opt in options.autostart"></select>
+
+			</td>
+
+			<td>
+
+				<select class="form-control" ng-model="obj.logging" ng-change="autoEdit()" ng-options="opt.val as opt.text for opt in options.logging"></select>
+
+			</td>
+
+			<td ng-bind="obj.port"></td>
+
+			<td ng-bind="obj.pid"></td>
+
+			<td>
+
+				<button type="button" class="btn btn-success" ng-click="save(obj)">Save</button>
+			
+				<button type="button" class="btn btn-danger" ng-click="delete(obj)">Delete</button>
+
+			</td>
+
+		</tr>
+
+	</table>
+
+	<button type="button" class="btn btn-warning" ng-click="scan()">Scan</button>
+
+</div>
