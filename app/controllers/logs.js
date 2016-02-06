@@ -1,12 +1,10 @@
 angular.module('bmslink.controllers')
 
-.controller('logsController',['$scope','$window','$http','$interval','host','$localStorage',
+.controller('logsController',['$scope','$interval','$localStorage','API','common',
 
-    function ($scope,$window,$http,$interval,host,$localStorage) {
+    function ($scope,$interval,$localStorage,API,common) {
 
-        var api = host + '/api/logs';
-
-        var records;
+        var resource = 'logs';
 
         $scope.user = $localStorage;
         
@@ -18,21 +16,6 @@ angular.module('bmslink.controllers')
 
         $scope.filteredList = [];
 
-        $scope.options = {};
-
-        $scope.options['order'] = [
-
-            {
-                val: 'desc',
-                text: 'descending'
-            },
-            {
-                val: 'asc',
-                text: 'ascending'
-            },
- 
-        ];
-     
         $scope.toggleAll = function() {
 
             var list = $scope.filteredList;
@@ -77,98 +60,112 @@ angular.module('bmslink.controllers')
             
             }
        
-            if (!$localStorage.logs) {
+            if (!$localStorage[resource]) {
 
-                $localStorage.logs = defaults;
+                $localStorage[resource] = defaults;
 
             }
 
-            $window.document.title = 'BMSLink - logs';
+            $localStorage.navbar.route = resource;
 
-            $localStorage.navbar.route = 'logs';
+            common.title(resource);
 
             $localStorage.navbar.update = 0;
 
         };
-          
-        $scope.delete = function() {
 
-            $window.bootbox.confirm("Are you sure?",function(ok) {
+        var deleteBatch = function(array) {
 
-                if (!ok) {
+            var len = array.length;
+
+            (function loop(n) {
+
+                if (n == len) {
+
+                    setTimeout(function() {
+                        
+                        $scope.selectAll = false;
+
+                        $scope.marked = {};
+
+                        $scope.showLogs();
+
+                    },2000);
 
                     return;
 
+                } else {
+
+                    var data = {};
+
+                    data.id = array[n].join(',');
+
+                    API.DELETE(resource,data, function(response) {
+
+                        if (response > 0) {
+
+                            loop(n + 1);
+
+                        } else {
+
+                            common.message('Failed!', function() {
+
+                                return;
+
+                            });
+
+                        }
+
+                    });
+
+                }
+       
+            })(0);
+
+        }
+          
+        $scope.delete = function() {
+
+            var list = $scope.marked;
+
+            var ids = [];
+
+            var i = 0;
+
+            angular.forEach(list,function(val,key) {
+
+                if (val) {
+
+                    ids.push(key);
+
                 }
 
-                var list = $scope.marked;
+            });
 
-                var obj = {};
+            if (ids.length > 0) {
 
-                var i = 0;
-       
-                angular.forEach(list,function(val,key) {
+                common.confirm(function() {
 
-                    if (!obj[i]) {
+                    common.splitArray(ids,100, function(array) {
 
-                        obj[i] = [];
+                        deleteBatch(array);
 
-                    }
-
-                    if (val) {
-             
-                        obj[i].push(key);
-
-                    }
-
-                    if (obj[i].length > 99) {
-
-                        i++;
-                  
-                    }                        
+                    });
 
                 });
 
-                var url;
+            } else {
 
-                (function loop(n) {
+                common.message('No records selected!');
 
-                    if (n > i) {
+            }
 
-                        setTimeout(function() {
-                            
-                            $scope.selectAll = false;
-
-                            $scope.marked = {};
-
-                            $scope.showLogs();
-
-                        },2000);
-
-                        return;
-
-                    } else {
-               
-                        url = api + '/id/' + obj[n];
-           
-                        $http.delete(url).success(function(data) {
- 
-                            loop(n + 1);
-
-                        });
-
-                    }
-           
-                })(0);
-         
- 
-            });
-
+       
         };
 
         $scope.sortBy = function(col) {
 
-            var sort = $localStorage.logs.sort;
+            var sort = $localStorage[resource].sort;
 
             var order = sort.slice(0,1);
 
@@ -188,37 +185,51 @@ angular.module('bmslink.controllers')
 
             }
 
-            $localStorage.logs.sort = order + col;
+            $localStorage[resource].sort = order + col;
            
         };
 
+        var pagesList = function() {
+
+            var log = $scope.log;
+
+            var list = $scope.records[log];
+
+            var pages = [];
+
+            var page;
+
+            angular.forEach(list,function(range,idx) {
+
+                page = idx + 1;
+
+                pages.push('Page ' + page);
+
+            })
+
+            $scope.pages = pages;
+
+            $scope.page = '0';
+
+        }
+
         var poll = function() {
 
-            var url = api;
+            API.GET(resource, function(json) {
 
-            $http.get(url).success(function(obj) {
-
-                records = obj.logs;
+                $scope.records = json;
 
                 var list = [];
-            
-                angular.forEach(records,function(val,key) {
 
-                    list.push(key);
-  
+                angular.forEach(json,function(range,log) {
+
+                    list.push(log);
+
                 });
 
-                if (list.length < 1) {
-
-                    var msg = 'No logs found!';
-
-                    $window.bootbox.alert(msg);
-
-                    return;
-
-                }
-
                 $scope.logs = list;
+  
+                $scope.ready = true;
 
                 if (!$scope.log) {
                         
@@ -226,34 +237,7 @@ angular.module('bmslink.controllers')
 
                 }
 
-                var pages = [];
-
-                var page = 1;
-
-                angular.forEach(records[$scope.log],function(val,idx) {
-
-                    pages.push({
-
-                        val: idx,
-                        text: 'page ' + page
-
-                    });
-
-                    page++;
-
-                });
-               
-                $scope.pages = pages;
-
-                $scope.page = 0;
-
-                if (!$scope.order) {
-                        
-                    $scope.order = 'desc';
-
-                }
-                
-                $scope.ready = true;
+                pagesList();
 
             });
 
@@ -261,15 +245,11 @@ angular.module('bmslink.controllers')
 
         $scope.showLogs = function() {
 
-            var array = records[$scope.log];
+            var ids = $scope.records[$scope.log][$scope.page];
 
-            var id = array[$scope.page];
+            var url = resource + '/log/' + $scope.log + '?id=' + ids.join('-');
 
-            var limit = 1000;
-
-            var url = api + '/log,' + $scope.log + '/id,' + id + '-/order,epoch/sort,' + $scope.order + '/limit,' + limit;
-          
-            $http.get(url).success(function(json) {
+            API.GET(url, function(json) {
 
                 $scope.data = json;
 
@@ -277,11 +257,11 @@ angular.module('bmslink.controllers')
 
         };
 
-        $scope.export = function() {
+        //$scope.export = function() {
 
-            $window.exportToPDF('logs',$scope.log);
+        //    common.exportToPDF('logs',$scope.log);
 
-        };
+        //};
        
         init();
 

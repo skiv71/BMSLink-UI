@@ -28,9 +28,9 @@
 
 			<td>
 
-				<button type="button" class="btn btn-danger" ng-click="set(obj,'stop')">Stop</button>
+				<button type="button" class="btn btn-danger" ng-click="device('stop',obj)">Stop</button>
 
-				<button type="button" class="btn btn-success" ng-click="set(obj,'start')">Start</button>
+				<button type="button" class="btn btn-success" ng-click="device('start',obj)">Start</button>
 
 			</td>
 
@@ -62,6 +62,6 @@
 
 	</table>
 
-	<button type="button" class="btn btn-warning" ng-click="scan()">Scan</button>
+	<button type="button" class="btn btn-warning" ng-click="device('scan')">Scan</button>
 
 </div>

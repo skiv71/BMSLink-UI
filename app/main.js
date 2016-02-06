@@ -8,11 +8,15 @@ var app = angular.module('bmslink', [
 
 	'ngStorage',
 
-	'bmslink.controllers'
+	'bmslink.controllers',
+
+    'bmslink.services'
 
 ]);
 
 angular.module('bmslink.controllers', []);
+
+angular.module('bmslink.services', []);
 
 app.constant('host','http://ubuntu');
 

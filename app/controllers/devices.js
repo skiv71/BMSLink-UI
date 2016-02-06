@@ -1,10 +1,10 @@
 angular.module('bmslink.controllers')
 
-.controller('devicesController',['$scope','$window','$http','$interval','host','$localStorage',
+.controller('devicesController',['$scope','$interval','$localStorage','API','common',
 
-    function ($scope,$window,$http,$interval,host,$localStorage) {
+    function ($scope,$interval,$localStorage,API,common) {
       
-        var api = host + '/api/devices';
+        var resource = 'devices';
 
         edit = false;
 
@@ -50,17 +50,17 @@ angular.module('bmslink.controllers')
             
             }
        
-            if (!$localStorage.devices) {
+            if (!$localStorage[resource]) {
 
-                $localStorage.devices = defaults;
+                $localStorage[resource] = defaults;
 
             }
 
-            $localStorage.navbar.update = $localStorage.devices.update;
+            $localStorage.navbar.update = $localStorage[resource].update;
             
-            var cols = $localStorage.devices.columns;
+            var cols = $localStorage[resource].columns;
 
-            var data = $localStorage.devices.data;
+            var data = $localStorage[resource].data;
 
             if ((cols) && (data)) {
 
@@ -72,39 +72,64 @@ angular.module('bmslink.controllers')
 
             }
 
-            $window.document.title = 'BMSLink - devices';
+            common.title(resource);
 
-            $localStorage.navbar.route = 'devices';
-
-        };
-
-        var message = function(msg,callback) {
-
-            setTimeout(function() {
-
-                $window.bootbox.alert(msg);
-
-                if (callback) {
-
-                    callback();
-
-                }
-
-            },500);
+            $localStorage.navbar.route = resource;
 
         };
-
+  
         var delRow = function(prop,val) {
 
-            angular.forEach($scope.data,function(obj,idx) {
+            var data = {
 
-                if (obj[prop] == val) {
+                array: $scope.data,
+                prop: prop,
+                val: val
 
-                    $scope.data.splice(idx,1);
+            };
+            
+            common.index(data, function(idx) {
 
-                    edit = false;
+                $scope.data.splice(idx,1);
 
-                    return;
+                edit = false;
+    
+            });
+
+        };
+
+        $scope.device = function(cmd,obj) {
+
+            var data = {};
+
+            if (obj) {
+
+                data['dev-ctrl'] = [
+
+                    obj.serial,
+                    cmd
+
+                ]
+
+            } else {
+
+                data['dev-' + cmd] = null;
+
+            }
+
+            API.POST(resource,data, function(response) {
+
+                if (response == 0) {
+
+                    common.message('Queued!', function() {
+
+                        setTimeout(function() {
+
+                            $scope.poll();
+
+                        },2000);
+
+                    });
 
                 }
 
@@ -114,70 +139,67 @@ angular.module('bmslink.controllers')
 
         $scope.save = function(obj) {
 
-            var url = api + '/id/' + obj.id + '/autostart/' + obj.autostart + '/logging/' + obj.logging;
+            var items = [
 
-            console.log(url);
-                   
-            $http.put(url).success(function(response) {
+                'id',
+                'autostart',
+                'logging'
+            
+            ];
 
-                if (response > 0) {
+            common.items(obj,items, function(data) {
 
-                    msg = 'Success!';
+                API.PUT(resource,data,function(response) {
 
-                } else {
-
-                    msg = 'Failed!';
-
-                }
- 
-                message(msg);
- 
-            });
-              
-        };
-      
-        $scope.delete = function(obj) {
-           
-            $window.bootbox.confirm('Are you sure?',function(ok) {
-
-                if (!ok) {
-
-                    return;
-                }
-
-                var url = api + '/id/' + obj.id;
- 
-                $http.delete(url).success(function(response) {
-              
                     if (response > 0) {
 
-                        msg = 'Success!';
+                        common.message('Success!',function() {
+
+                            $scope.poll();
+
+                        });
 
                     } else {
 
-                        msg = 'Failed!';
+                        common.message('Failed');
 
                     }
- 
-                    message(msg,function() {
 
-                        if (response > 0) {
-
-                            delRow('serial',obj.serial);
-
-                        }
-
-                    });
-                     
                 });
 
             });
-     
+
+        };
+
+        $scope.delete = function(obj) {
+
+            common.confirm(function() {
+
+                API.DELETE(resource,obj, function(response) {
+
+                    if (response > 0) {
+
+                        common.message(msg, function() {
+
+                            delRow('id',obj.id);
+
+                        });
+
+                    } else {
+
+                        common.message('Failed!');
+
+                    }
+
+                });
+
+            });
+
         };
 
         $scope.sortBy = function(col) {
 
-            var sort = $localStorage.devices.sort;
+            var sort = $localStorage[resource].sort;
 
             var order = sort.slice(0,1);
 
@@ -197,85 +219,43 @@ angular.module('bmslink.controllers')
 
             }
 
-            $localStorage.devices.sort = order + col;
+            $localStorage[resource].sort = order + col;
            
         };
 
-        $scope.set = function(obj,cmd) {
-      
-            var data = {};
+        var columns = function(json,callback) {
 
-            data['cmd'] = [
+            if (callback) {
 
-                'dev-ctrl',
-                obj.serial,
-                cmd
+                common.columns(json, function(array) {
 
-            ];
-  
-            $http.post(api,data).success(function(response) {
-
-                message(response);
-
-            });
+                    array.splice(3,0,'interface');
              
-       };
+                    array.splice(6,1);
 
-        $scope.scan = function() {
+                    callback(array);
 
-            var data = {};
+                });
 
-            data['cmd'] = [
-
-                'dev-scan'
-                     
-            ];
-
-            $http.post(api,data).success(function(response) {
-             
-                message(response);
-                
-            });
-
-        };
-
-        var columns = function(json) {
-
-            var array = [];
-
-            var i = 0;
-
-            angular.forEach(json[0],function(val,key) {
-
-                if (i > 0) {
-
-                    array.push(key);
-
-                }
-                 
-                i++;
-              
-            });
-
-            array.splice(3,0,'interface');
-         
-            array.splice(6,1);
-    
-            return array;
+            }
 
         };
 
         $scope.poll = function() {
 
-            $http.get(api).success(function(json) {
+            API.GET(resource, function(json) {
 
                 $scope.data = json;
 
-                $scope.columns = columns(json);
+                columns(json, function(cols) {
 
-                $localStorage.devices.data = $scope.data;
+                    $scope.columns = cols;
 
-                $localStorage.devices.columns = $scope.columns;
+                });
+            
+                $localStorage[resource].data = $scope.data;
+
+                $localStorage[resource].columns = $scope.columns;
 
                 $scope.ready = true;
 
@@ -293,7 +273,7 @@ angular.module('bmslink.controllers')
 
                 var upd = $localStorage.navbar.update;
 
-                $localStorage.devices.update = upd;
+                $localStorage[resource].update = upd;
 
                 if ((upd) && (!edit)) {
 

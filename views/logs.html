@@ -8,7 +8,7 @@
 
 			<td>
 
-				<select class="form-control" ng-change="reset()" ng-model="log" ng-options="log for log in logs"></select>
+				<select class="form-control" ng-change="reset()" ng-model="log" ng-options="val as val for (idx,val) in logs"></select>
 
 			</td>
 
@@ -16,16 +16,8 @@
 
 			<td>
 
-				<select class="form-control" ng-model="page" ng-options="page.val as page.text for page in pages"></select>
+				<select class="form-control" ng-model="page" ng-options="idx as val for (idx,val) in pages"></select>
 	
-			</td>
-
-			<td>Order</td>
-
-			<td>
-
-				<select class="form-control" ng-model="order" ng-options="opt.val as opt.text for opt in options.order"></select>
-
 			</td>
 
 			<td>

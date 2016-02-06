@@ -1,10 +1,10 @@
 angular.module('bmslink.controllers')
 
-.controller('controlController',['$scope','$window','$http','$interval','host','$localStorage',
+.controller('controlController',['$scope','$interval','$localStorage','API','common',
 
-    function ($scope,$window,$http,$interval,host,$localStorage) {
+    function ($scope,$interval,$localStorage,API,common) {
 
-        var api = host + '/api/control';
+        var resource = 'control';
 
         var edit = false;
 
@@ -41,17 +41,17 @@ angular.module('bmslink.controllers')
             
             }
        
-            if (!$localStorage.control) {
+            if (!$localStorage[resource]) {
 
-                $localStorage.control = defaults;
+                $localStorage[resource] = defaults;
 
             }
 
-            $localStorage.navbar.update = $localStorage.control.update;
+            $localStorage.navbar.update = $localStorage[resource].update;
             
-            var cols = $localStorage.control.columns;
+            var cols = $localStorage[resource].columns;
 
-            var data = $localStorage.control.data;
+            var data = $localStorage[resource].data;
 
             if ((cols) && (data)) {
 
@@ -63,65 +63,46 @@ angular.module('bmslink.controllers')
 
             }
 
-            $window.document.title = 'BMSLink - control';
+            common.title(resource);
 
-            $localStorage.navbar.route = 'control';
+            $localStorage.navbar.route = resource;
 
         };
 
-        var message = function(msg,callback) {
+    
+        $scope.save = function(obj) {
 
-            setTimeout(function() {
+            var method;
 
-                $window.bootbox.alert(msg);
+            if (obj.name) {
 
-                if (callback) {
+                var data = angular.copy(obj);
 
-                    callback();
+                delete data.$$hashKey;
+
+                if (data.id) {
+
+                    method = 'PUT';
+       
+                } else {
+
+                    method = 'POST';
 
                 }
 
-            },500);
-
-        };
-
-        $scope.save = function(obj) {
-
-            if (!obj.name) {
-
-                message('Please enter a name!');
-         
-                return;
-
-            }
-
-            delete obj.$$hashKey;
-
-            if (obj.id) {
-
-                var data = [];
-
-                angular.forEach(obj,function(val,prop) {
-
-                    data.push(prop + '/' + encodeURIComponent(val));
- 
-                });
-
-                var url = api + '/' + data.join('/');
-      
-                $http.put(url).success(function(response) {
+                API[method](resource,data,function(response) {
 
                     if (response > 0) {
 
-                        message('Success!',function() {
+                        common.message('Success!',function() {
 
                             $scope.poll();
 
                         });
-                        
+
                     } else {
 
-                        message('Failed');
+                        common.message('Failed');
 
                     }
 
@@ -129,23 +110,7 @@ angular.module('bmslink.controllers')
 
             } else {
 
-                $http.post(api,obj).success(function(response) {
-
-                    if (response > 0) {
-
-                        message('Success!',function() {
-
-                            $scope.poll();
-
-                        });
-
-                    } else {
-
-                        message('Failed');
-
-                    }
-
-                });
+                common.message('Please enter a name!');
 
             }
 
@@ -153,52 +118,35 @@ angular.module('bmslink.controllers')
 
         var delRow = function(prop,val) {
 
-            angular.forEach($scope.data,function(obj,idx) {
+            var data = {
 
-                if (obj[prop] == val) {
+                array: $scope.data,
+                prop: prop,
+                val: val
 
-                    $scope.data.splice(idx,1);
+            };
 
-                    edit = false;
+            common.index(data, function(idx) {
 
-                    return;
+                $scope.data.splice(idx,1);
 
-                }
-
+                edit = false;
+    
             });
 
         };
 
         $scope.delete = function(obj) {
 
-            $window.bootbox.confirm("Are you sure?",function(ok) {
-
-                if (!ok) {
-
-                    return;
-
-                }
+            common.confirm(function() {
 
                 if (obj.id) {
 
-                    var url = api + '/id/' + obj.id;
-       
-                    $http.delete(url).success(function(response) {
+                    API.DELETE(resource,obj, function(response) {
 
-                        if (response > 0) {
+                        common.message(msg, function() {
 
-                            msg = 'Success!';
-
-                        } else {
-
-                            msg = 'Failed';
-
-                        }
-
-                        message(msg, function() {
-
-                            delRow('timestamp',obj.timestamp);
-
+                            delRow('id',obj.id);
 
                         });
 
@@ -238,7 +186,7 @@ angular.module('bmslink.controllers')
 
         $scope.sortBy = function(col) {
 
-            var sort = $localStorage.control.sort;
+            var sort = $localStorage[resource].sort;
 
             var order = sort.slice(0,1);
 
@@ -258,7 +206,7 @@ angular.module('bmslink.controllers')
 
             }
 
-            $localStorage.control.sort = order + col;
+            $localStorage[resource].sort = order + col;
            
         };
 
@@ -282,41 +230,23 @@ angular.module('bmslink.controllers')
 
         $scope.set = function(obj,prop) {
 
-            var url = host + '/api/scada';
+            var cmd = {};
 
-            var data = {};
-
+            var val;
+       
             if (obj[prop]) {
 
-                data[obj.name] = obj[prop];
+                val = obj[prop];
 
             } else {
 
-                data[obj.name] = prop;
+                val = prop;
 
             }
 
-            $http.post(url,data).success(function(response) {
+            cmd[obj.name] = val;
 
-                console.log(response);
-
-                return;
-
-                if (response == 0) {
-
-                    message('Sent!', function() {
-
-                        $scope.poll;
-
-                    });
-
-                } else {
-
-                    message('Failed!');
-
-                }
-  
-            });
+            API.scada(cmd);
 
         };
 
@@ -340,15 +270,15 @@ angular.module('bmslink.controllers')
 
         $scope.poll = function() {
 
-            $http.get(api).success(function(json) {
-
+            API.GET(resource, function(json) {
+     
                 $scope.data = json;
 
                 $scope.columns = columns();
 
-                $localStorage.control.data = $scope.data;
+                $localStorage[resource].data = $scope.data;
 
-                $localStorage.control.columns = $scope.columns;
+                $localStorage[resource].columns = $scope.columns;
 
                 $scope.ready = true;
 
@@ -366,7 +296,7 @@ angular.module('bmslink.controllers')
 
                 var upd = $localStorage.navbar.update;
 
-                $localStorage.control.update = upd;
+                $localStorage[resource].update = upd;
 
                 if ((upd) && (!edit)) {
 
